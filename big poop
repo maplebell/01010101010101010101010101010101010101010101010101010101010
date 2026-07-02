@@ -1,0 +1,55 @@
+def client():
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(('127.0.0.1', 9999))
+    client.send(b'hello, world - from client')
+    data = client.recv(1024)
+    if data:
+        print(f"server: {data.decode('utf-8')}")
+    client.close()
+
+class chatserver:
+    def __init__(self, host='127.0.0.1', port=9999):
+        self.host = host
+        self.port = port
+        self.server_socket = None
+        self.client_socket = None
+        self.running = True
+    
+    def start_server(self):
+        try:
+            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.server_socket.bind((self.host, self.port))
+            self.server_socket.listen(1)
+
+            print(f'--- server start ---')
+            print(f'listen addr: {self.host}:{self.port}')
+            print(f'waiting client connect...')
+            print('-' * 50)
+
+            self.client_socket, addr = self.server_socket.accept()
+            print(f'client {addr} connect')
+            print('=' * 50)
+            print(f"Enter content. Type '/quit' to exit")
+            print('-' * 50)
+
+            receive_thread = threading.Thread(target=self.receive_messages)
+            receive_thread.daemon = True
+            receive_thread.start()
+
+            self.send_messages()
+        
+        except Exception as e:
+            print('server start failure.')
+        finally:
+            None
+
+    def receive_messages(self):
+        data = self.client_socket.recv(1024)
+        if data:
+            print(f"客户端: {data.decode('utf-8')}")
+        print('> ', end='', flush=True)
+
+    def send_messages(self):
+        data = input('> ')
+        self.client_socket.send(data.encode('utf-8'))
